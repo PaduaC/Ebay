@@ -27,6 +27,17 @@ contract Ebay {
     uint256 private nextAuctionId = 1;
     uint256 private nextOfferId = 1;
 
+    event AuctionCreated(
+        string name,
+        string description,
+        uint256 minPrice,
+        uint256 duration
+    );
+
+    event AuctionEnded(string name, string description, uint256 price);
+
+    event NewOffer(uint256 auctionId, address buyer, uint256 price);
+
     function createAuction(
         string calldata _name,
         string calldata _description,
@@ -36,7 +47,7 @@ contract Ebay {
         require(_minimumPrice > 0, "Price must be > 0");
         require(
             _duration > 86400 && _duration < 864000,
-            "Duration last within 1 to 10 days"
+            "Duration must last within 1 to 10 days"
         );
         // Define empty array
         uint256[] memory offerIds = new uint256[](0);
@@ -51,6 +62,7 @@ contract Ebay {
             offerIds
         );
         userAuctions[msg.sender].push(nextAuctionId);
+        emit AuctionCreated(_name, _description, _minimumPrice, _duration);
         nextAuctionId++;
     }
 
@@ -77,6 +89,7 @@ contract Ebay {
             msg.value
         );
         userOffers[msg.sender].push(nextOfferId);
+        emit NewOffer(auction.id, msg.sender, offers[nextOfferId].price);
         nextOfferId++;
     }
 
@@ -94,6 +107,11 @@ contract Ebay {
             }
         }
         auction.seller.transfer(bestOffer.price);
+        emit AuctionEnded(
+            auction.auctionName,
+            auction.description,
+            auction.minimumPrice
+        );
     }
 
     function getAuctions() external view returns (Auction[] memory) {
